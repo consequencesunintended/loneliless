@@ -67,6 +67,8 @@ void scale_by_2( Eigen::Ref<Eigen::VectorXd> v ) {
 	v *= 2;
 }
 
+
+
 //--------------------------------------------------------------
 void ofApp::draw() {
 
