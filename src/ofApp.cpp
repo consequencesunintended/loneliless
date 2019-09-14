@@ -86,15 +86,10 @@ void ofApp::draw() {
 	ofImage screenTemp;
 	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
 
-	int m = 2;
-
-	screen[3] = std::move( screen[2] );
-	screen[2] = std::move( screen[1] );
-	screen[1] = std::move(screen[0]);
-	screen[0] = std::move(screenTemp);
-
 	//unsigned char* test = screen[0].getPixels().getData();
-	//py::object result = py_test.attr( "get_action" )();
+	auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
+
+	py::object result = py_test.attr( "get_action" )(matrix);
 
 
 	//int casted_result = result.cast<int>();

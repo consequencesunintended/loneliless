@@ -48,7 +48,6 @@ class ofApp : public ofBaseApp {
 	py::module py_test;
 
 	py::scoped_interpreter guard{};
-	ofImage screen[4];
 
 	//ofTrueTypeFont 	vagRounded;
 };

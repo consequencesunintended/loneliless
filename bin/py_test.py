@@ -81,8 +81,5 @@ sess.run(init)
 
 
 def get_action(prev_state):
-    if (np.random.rand(1)) < exploration_rate:
-        action[0] = np.random.randint(0, action_space_size )
-    else:
-        action = sess.run(act, feed_dict={image_1: [prev_state]})
-    return action
+    print(prev_state[0][0])
+    return 1
