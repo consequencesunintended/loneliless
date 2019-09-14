@@ -89,7 +89,9 @@ void ofApp::draw() {
 	//unsigned char* test = screen[0].getPixels().getData();
 	auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
 
-	py::object result = py_test.attr( "get_action" )(matrix);
+	py_test.attr( "buffer_frame" )(matrix);
+	py_test.attr( "get_action" )();
+
 
 
 	//int casted_result = result.cast<int>();

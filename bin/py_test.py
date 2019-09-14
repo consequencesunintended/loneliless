@@ -1,6 +1,7 @@
 import tensorflow as tf
 import collections
 import numpy as np
+import cv2
 
 action_space_size = 2
 lr = 0.01
@@ -70,6 +71,7 @@ loss_count = 0
 replay_memory_max_size = 10000
 replay_memory = collections.deque(maxlen=replay_memory_max_size)
 total_reward = collections.deque(maxlen=100)
+frame_buffer = collections.deque(maxlen=4)
 sync_size = 1000
 batch_size = 32
 saver = tf.train.Saver()
@@ -78,8 +80,18 @@ sess = tf.compat.v1.Session()
 
 sess.run(init)
 
+def resize(frame):
+    resized_screen = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
+    x_t = np.reshape(resized_screen, [80, 80, 1])
+    return x_t.astype(np.uint8)
 
+def buffer_frame(frame):
+    frame = resize(frame)
+    frame_buffer.append(frame)
+    max_frame = np.dstack(frame_buffer)
+    return max_frame
 
-def get_action(prev_state):
-    print(prev_state[0][0])
+def get_action():
+    print("---------")
+    print(frame_buffer[0][0])
     return 1
