@@ -13,12 +13,12 @@ target_name = 'target'
 def createNetowrk(name):
     with tf.variable_scope(name):
 
-        input_images = tf.placeholder(tf.float32,shape=[None, 84,84,4])
+        input_images = tf.placeholder(tf.float32,shape=[None, 80,80,4])
         convo_1 = tf.layers.conv2d(inputs=input_images,filters=32,kernel_size=5,padding="same", activation=tf.nn.relu)
         convo_1_pooling = tf.layers.max_pooling2d(inputs=convo_1, pool_size=[2, 2], strides=2)
         convo_2 = tf.layers.conv2d(inputs=convo_1_pooling,filters=64,kernel_size=5,padding="same", activation=tf.nn.relu)
         convo_2_pooling = tf.layers.max_pooling2d(inputs=convo_2, pool_size=[2, 2], strides=2)
-        convo_2_flat = tf.reshape(convo_2_pooling,[-1,21*21*64])
+        convo_2_flat = tf.reshape(convo_2_pooling,[-1,20*20*64])
         hidden_1 = tf.layers.dense(convo_2_flat, 512, activation=tf.nn.relu)
         y_pred = tf.layers.dense(hidden_1, action_space_size)
         act = tf.argmax(y_pred, 1)
@@ -72,7 +72,7 @@ loss_count = 0
 replay_memory_max_size = 10000
 replay_memory = collections.deque(maxlen=replay_memory_max_size)
 total_reward = collections.deque(maxlen=100)
-frame_buffer = collections.deque(maxlen=4)
+frames_buffer = collections.deque(maxlen=4)
 sync_size = 1000
 batch_size = 32
 saver = tf.train.Saver()
@@ -87,18 +87,26 @@ def resize(frame):
     return x_t.astype(np.uint8)
 
 def buffer_frame(frame):
-    frame = resize(frame)
-    frame_buffer.append(frame)
-    max_frame = np.dstack(frame_buffer)
-    return max_frame
+    frame = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
+    frames_buffer.append(frame)
 
-frame2 = np.zeros((80,80))
+def get_frame(index):
+    current_frames = np.dstack(frames_buffer)
 
-def get_action(frame):
-    frame_buffer.append(frame)
-    max_frame = np.dstack(frame_buffer)
+    return current_frames[:,:,index]
 
-    if len(frame_buffer) == 4:
-        return max_frame[:,:,3]
+def get_frames():
+    current_frames = np.dstack(frames_buffer)
+    return current_frames
+
+def get_action():
+
+    frames = get_frames()
+    action = [0]
+
+    if (np.random.rand(1)) < exploration_rate:
+        action[0] = np.random.randint(0, 2)
     else:
-        return max_frame[:,:,0]
+        action = sess.run(act, feed_dict={image_1: [prev_frames]})
+
+    return action[0]

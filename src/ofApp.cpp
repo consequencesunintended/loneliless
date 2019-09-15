@@ -88,7 +88,6 @@ void ofApp::draw() {
 	ofImage screenTemp;
 	
 	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-	screenTemp.resize(80,80);
 	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
 	////unsigned char* test = screen[0].getPixels().getData();
 	//auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
@@ -97,20 +96,40 @@ void ofApp::draw() {
 	//py_test.attr( "get_action" )();
 
 
+	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
 
-	auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2 > >( screenTemp.getPixels().getData() );
-	auto result = py_test.attr( "get_action" )(matrix);
+	if ( !m_initial_frames_set )
+	{
+		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+		{
+			py_test.attr( "buffer_frame" )(frame);
+		}
+		m_initial_frames_set = true;
+	}
+	py_test.attr( "buffer_frame" )(frame);
 
+	auto action = py_test.attr( "get_action" )();
 
-	Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> new_image;
+	//if ( m_frames == 0 )
+	//{ 
+	//	py_test.attr( "buffer_frame" )(frame);
+	//}
+	//m_frames ++;
 
-	new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> > ();
+	//if ( m_frames == 5 )
+	//{
+	//	m_frames = 0;
+	//}
+	//auto result = py_test.attr( "get_frame" )(0);
+	//auto& new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> > ();
+	//ofImage screenTemp2;
+	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
+	//screenTemp2.draw( 0, 0 );
 
-	ofImage screenTemp2;
-
-	screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	screenTemp2.draw( 0, 0 );
-	//cout << casted_result << endl;
+	//result = py_test.attr( "get_frame" )(3);
+	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
+	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
+	//screenTemp2.draw( 0, 80 );
 }
 
 bool ofApp::hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position )

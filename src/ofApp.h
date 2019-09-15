@@ -32,18 +32,20 @@ class ofApp : public ofBaseApp {
 	void	gotMessage( ofMessage msg );
 
 	private:
-	int		m_player_length{ HEIGHT_RES / 9 };
-	ofVec2f	m_player_position{ 0.0f, 0.0f };
-	ofVec2f m_ball_position{ WIDTH_RES / 2, HEIGHT_RES / 2 };
-	int		m_ball_size{ 5 };
-	ofVec2f m_ball_origin;
-	ofVec2f m_ball_direction{ 0.0f, -1.0f };
-	ofVec2f m_ball_original_direction;
+	int				m_player_length{ HEIGHT_RES / 9 };
+	ofVec2f			m_player_position{ 0.0f, 0.0f };
+	ofVec2f			m_ball_position{ WIDTH_RES / 2, HEIGHT_RES / 2 };
+	int				m_ball_size{ 5 };
+	ofVec2f			m_ball_origin;
+	ofVec2f			m_ball_direction{ 0.0f, -1.0f };
+	ofVec2f			m_ball_original_direction;
 
-	bool	m_key_pressed{ false };
-	int		m_start_time{ 0 };
-	int		m_end_time{ 0 };
-	int		m_elapsed_time{ 0 };
+	bool			m_key_pressed{ false };
+	int				m_start_time{ 0 };
+	int				m_end_time{ 0 };
+	int				m_elapsed_time{ 0 };
+	bool			m_initial_frames_set{ false };
+	const int		m_num_of_frames_to_buffer{ 4 };
 
 	py::module py_test;
 
