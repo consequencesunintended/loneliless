@@ -2,6 +2,7 @@ import tensorflow as tf
 import collections
 import numpy as np
 import cv2
+import copy 
 
 action_space_size = 2
 lr = 0.01
@@ -77,7 +78,7 @@ batch_size = 32
 saver = tf.train.Saver()
 Experience = collections.namedtuple("Experience", field_names=['state', 'action', 'reward', 'done', 'new_state'])
 sess = tf.compat.v1.Session()
-
+resized_screen = np.zeros((80,80))
 sess.run(init)
 
 def resize(frame):
@@ -91,7 +92,13 @@ def buffer_frame(frame):
     max_frame = np.dstack(frame_buffer)
     return max_frame
 
-def get_action():
-    print("---------")
-    print(frame_buffer[0][0])
-    return 1
+frame2 = np.zeros((80,80))
+
+def get_action(frame):
+    frame_buffer.append(frame)
+    max_frame = np.dstack(frame_buffer)
+
+    if len(frame_buffer) == 4:
+        return max_frame[:,:,3]
+    else:
+        return max_frame[:,:,0]

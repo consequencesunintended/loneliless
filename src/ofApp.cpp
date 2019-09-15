@@ -5,6 +5,8 @@
 #include <pybind11/numpy.h>
 #include <pybind11/eigen.h>
 
+#include "ofxOpenCv.h"
+
 
 //--------------------------------------------------------------
 void ofApp::setup() {
@@ -84,18 +86,30 @@ void ofApp::draw() {
 	ofDrawRectangle( m_ball_position.x, m_ball_position.y, m_ball_size, m_ball_size );
 
 	ofImage screenTemp;
+	
 	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+	screenTemp.resize(80,80);
+	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+	////unsigned char* test = screen[0].getPixels().getData();
+	//auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
 
-	//unsigned char* test = screen[0].getPixels().getData();
-	auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
-
-	py_test.attr( "buffer_frame" )(matrix);
-	py_test.attr( "get_action" )();
+	//py_test.attr( "buffer_frame" )(matrix);
+	//py_test.attr( "get_action" )();
 
 
 
-	//int casted_result = result.cast<int>();
+	auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2 > >( screenTemp.getPixels().getData() );
+	auto result = py_test.attr( "get_action" )(matrix);
 
+
+	Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> new_image;
+
+	new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> > ();
+
+	ofImage screenTemp2;
+
+	screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
+	screenTemp2.draw( 0, 0 );
 	//cout << casted_result << endl;
 }
 
