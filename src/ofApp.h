@@ -15,11 +15,15 @@ class ofApp : public ofBaseApp {
 	public:
 	void	setup();
 	void	update();
+	void	updateBallPosition( float dt, bool& retflag, bool& done );
 	void	draw();
 	bool	hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position );
 
+	void	moveUp( float dx );
+
 	void	keyPressed( int key );
-	void resetLevel();
+	void	moveDown( float dx );
+	void	resetLevel();
 	void	keyReleased( int key );
 	void	mouseMoved( int x, int y );
 	void	mouseDragged( int x, int y, int button );
@@ -33,7 +37,7 @@ class ofApp : public ofBaseApp {
 
 	private:
 	int				m_player_length{ HEIGHT_RES / 9 };
-	ofVec2f			m_player_position{ 0.0f, 0.0f };
+	ofVec2f			m_player_position{ 10.0f, 0.0f };
 	ofVec2f			m_ball_position{ WIDTH_RES / 2, HEIGHT_RES / 2 };
 	int				m_ball_size{ 5 };
 	ofVec2f			m_ball_origin;

@@ -5,9 +5,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/eigen.h>
 
-#include "ofxOpenCv.h"
-
-
 //--------------------------------------------------------------
 void ofApp::setup() {
 	//vagRounded.load( "vag.ttf", 32 );
@@ -21,6 +18,7 @@ void ofApp::setup() {
 
 	py_test = py::module::import( "py_test" );
 
+	py_test.attr( "define_globals" )();
 
 }
 
@@ -30,6 +28,56 @@ void ofApp::update() {
 	ofResetElapsedTimeCounter();
 	dt += 1.0f;
 
+	bool retflag;
+	bool done;
+	float reward = 0.0f;
+	updateBallPosition( dt, retflag, done );
+	if ( retflag ) return;
+
+	ofImage screenTemp;
+
+	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
+	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
+
+	if ( !m_initial_frames_set )
+	{
+		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+		{
+			py_test.attr( "buffer_frame" )(frame);
+		}
+		m_initial_frames_set = true;
+	}
+	py_test.attr( "buffer_frame" )(frame);
+
+	auto action_pyvalue = py_test.attr( "get_action" )();
+	int action = action_pyvalue.cast<int>();
+
+	if ( action == 0 )
+	{
+		moveUp( dt );
+	}
+	else
+	{
+		moveDown( dt );
+	}
+	if ( done )
+	{
+		reward = -1.0f;
+	}
+	py_test.attr( "add_replay_memory" )(action, reward, done );
+
+	if ( done )
+	{
+		resetLevel();
+	}
+}
+
+void ofApp::updateBallPosition( float dt, bool& retflag, bool& done )
+{
+	retflag = true;
+	done = false;
 	ofVec2f new_ball_position = m_ball_position + m_ball_direction * dt * 2.0f;
 
 	if ( new_ball_position.y <= 0 )
@@ -53,7 +101,7 @@ void ofApp::update() {
 
 	else if ( new_ball_position.x <= 0 )
 	{
-		resetLevel();
+		done = true;
 		new_ball_position = m_ball_position;
 	}
 	else if ( new_ball_position.x >= HEIGHT_RES - m_ball_size )
@@ -63,12 +111,8 @@ void ofApp::update() {
 	}
 
 	m_ball_position = new_ball_position;
-	static int times = 1;
+	retflag = false;
 }
-void scale_by_2( Eigen::Ref<Eigen::VectorXd> v ) {
-	v *= 2;
-}
-
 
 
 //--------------------------------------------------------------
@@ -85,30 +129,13 @@ void ofApp::draw() {
 
 	ofDrawRectangle( m_ball_position.x, m_ball_position.y, m_ball_size, m_ball_size );
 
-	ofImage screenTemp;
-	
-	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
 	////unsigned char* test = screen[0].getPixels().getData();
 	//auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
 
 	//py_test.attr( "buffer_frame" )(matrix);
 	//py_test.attr( "get_action" )();
 
-
-	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
-
-	if ( !m_initial_frames_set )
-	{
-		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
-		{
-			py_test.attr( "buffer_frame" )(frame);
-		}
-		m_initial_frames_set = true;
-	}
-	py_test.attr( "buffer_frame" )(frame);
-
-	auto action = py_test.attr( "get_action" )();
 
 	//if ( m_frames == 0 )
 	//{ 
@@ -144,6 +171,18 @@ bool ofApp::hasCollidedWithPlayer( const ofVec2f& ball_current_position, const o
 	return ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, ball_current_position, ball_new_position, interSection );
 }
 
+void ofApp::moveUp( float dx )
+{
+	if ( m_player_position.y - dx >= 0 )
+	{
+		m_player_position.y -= dx;
+	}
+	else
+	{
+		m_player_position.y = 0;
+	}
+}
+
 //--------------------------------------------------------------
 void ofApp::keyPressed( int key ) {
 
@@ -162,31 +201,29 @@ void ofApp::keyPressed( int key ) {
 
 	if ( key == OF_KEY_UP )
 	{
-		if ( m_player_position.y - dx >= 0 )
-		{
-			m_player_position.y -= dx;
-		}
-		else
-		{
-			m_player_position.y = 0;
-		}
+		moveUp( dx );
 	}
 	else if ( key == OF_KEY_DOWN )
 	{
-		int height = ofGetWindowHeight();
-
-		if ( m_player_position.y + m_player_length + dx <= height )
-		{
-			m_player_position.y += dx;
-		}
-		else
-		{
-			m_player_position.y = height - m_player_length;
-		}
+		moveDown( dx );
 	}
 	else if ( key == OF_KEY_F10 )
 	{
 		resetLevel();
+	}
+}
+
+void ofApp::moveDown( float dx )
+{
+	int height = ofGetWindowHeight();
+
+	if ( m_player_position.y + m_player_length + dx <= height )
+	{
+		m_player_position.y += dx;
+	}
+	else
+	{
+		m_player_position.y = height - m_player_length;
 	}
 }
 

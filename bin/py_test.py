@@ -60,7 +60,7 @@ train_episodes = 4000
 episodes = 0
 episode_t = 0
 save_sync = 100
-rewards_current_episodes = 0
+
 rewards_all_episodes = []
 num_episodes = 1000
 exploration_rate = 1
@@ -81,6 +81,12 @@ sess = tf.compat.v1.Session()
 resized_screen = np.zeros((80,80))
 sess.run(init)
 
+empty_frame = np.zeros((80,80,4))
+frames_buffer.append(empty_frame)
+current_frames = np.dstack(frames_buffer)   
+prev_frames = np.dstack(frames_buffer)  
+
+
 def resize(frame):
     resized_screen = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
     x_t = np.reshape(resized_screen, [80, 80, 1])
@@ -89,14 +95,19 @@ def resize(frame):
 def buffer_frame(frame):
     frame = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
     frames_buffer.append(frame)
+    global current_frames
+    global prev_frames
+    prev_frames = current_frames
+    current_frames = np.dstack(frames_buffer)   
 
-def get_frame(index):
-    current_frames = np.dstack(frames_buffer)
+def define_globals():
+    global rewards_current_episodes
+    rewards_current_episodes = 0.0
 
+def get_frame(index):    
     return current_frames[:,:,index]
 
-def get_frames():
-    current_frames = np.dstack(frames_buffer)
+def get_frames():   
     return current_frames
 
 def get_action():
@@ -110,3 +121,24 @@ def get_action():
         action = sess.run(act, feed_dict={image_1: [prev_frames]})
 
     return action[0]
+
+def add_replay_memory(action, rew, done):
+
+    done_value = 0.0 if done == True else 1.0
+    exp = Experience(prev_frames, action, rew, done_value, current_frames)
+    replay_memory.append(exp)
+
+    global rewards_current_episodes
+    rewards_current_episodes += rew
+
+
+    if done:
+        total_reward.append(rewards_current_episodes)
+        global episodes
+        print( "Episode:", episodes )
+        print(np.mean([total_reward[x] for x in range(len(total_reward))]))
+        rewards_current_episodes = 0
+        episodes += 1
+
+        exploration_rate = min_exploration_rate + \
+                            (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)
