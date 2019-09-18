@@ -69,7 +69,7 @@ min_exploration_rate = 0.01
 exploration_decay_rate = 0.01
 sum_losses = 0
 loss_count = 0
-replay_memory_max_size = 10000
+replay_memory_max_size = 4000
 replay_memory = collections.deque(maxlen=replay_memory_max_size)
 total_reward = collections.deque(maxlen=100)
 frames_buffer = collections.deque(maxlen=4)
@@ -123,7 +123,8 @@ def get_action():
     return action[0]
 
 def add_replay_memory(action, rew, done):
-
+    global episode_t
+    episode_t += 1
     done_value = 0.0 if done == True else 1.0
     exp = Experience(prev_frames, action, rew, done_value, current_frames)
     replay_memory.append(exp)
@@ -131,6 +132,22 @@ def add_replay_memory(action, rew, done):
     global rewards_current_episodes
     rewards_current_episodes += rew
 
+    if len(replay_memory) == replay_memory_max_size:
+
+        indicies = np.random.randint(0,replay_memory_max_size,size=batch_size)
+        prev_state_list, action_list, rew_list, done_list, next_state_list = zip(*[ replay_memory[x] for x in indicies])
+        target_q = sess.run(target_y_pred, feed_dict={target_image_1: np.asarray(next_state_list)})
+        target_q_val = np.max( target_q, axis=1 )
+        action_array = []
+        target_q_val = target_q_val * done_list
+        q_true_values = rew_list + gamma * target_q_val
+        for i in range(batch_size):
+            action_array.append([i, action_list[i]])
+        sess.run(train_step, feed_dict={image_1: prev_state_list,enum_action: action_array,y_true: q_true_values})
+
+
+    if episode_t % sync_size == 0:
+        sess.run(Operations)
 
     if done:
         total_reward.append(rewards_current_episodes)

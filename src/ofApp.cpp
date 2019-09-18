@@ -19,7 +19,6 @@ void ofApp::setup() {
 	py_test = py::module::import( "py_test" );
 
 	py_test.attr( "define_globals" )();
-
 }
 
 //--------------------------------------------------------------
@@ -31,8 +30,7 @@ void ofApp::update() {
 	bool retflag;
 	bool done;
 	float reward = 0.0f;
-	updateBallPosition( dt, retflag, done );
-	if ( retflag ) return;
+	updateBallPosition( dt, retflag, done, reward );
 
 	ofImage screenTemp;
 
@@ -49,7 +47,18 @@ void ofApp::update() {
 		}
 		m_initial_frames_set = true;
 	}
-	py_test.attr( "buffer_frame" )(frame);
+
+	if ( m_current_frame == 0 || done )
+	{
+		py_test.attr( "buffer_frame" )(frame);
+	}
+
+	m_current_frame++;
+
+	if ( m_current_frame == 5 )
+	{
+		m_current_frame = 0;
+	}
 
 	auto action_pyvalue = py_test.attr( "get_action" )();
 	int action = action_pyvalue.cast<int>();
@@ -74,10 +83,11 @@ void ofApp::update() {
 	}
 }
 
-void ofApp::updateBallPosition( float dt, bool& retflag, bool& done )
+void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
 {
 	retflag = true;
 	done = false;
+	reward = 0.0f;
 	ofVec2f new_ball_position = m_ball_position + m_ball_direction * dt * 2.0f;
 
 	if ( new_ball_position.y <= 0 )
@@ -94,6 +104,7 @@ void ofApp::updateBallPosition( float dt, bool& retflag, bool& done )
 
 	else if ( hasCollidedWithPlayer( m_ball_position, new_ball_position ) )
 	{
+		reward = 1.0f;
 		new_ball_position.x = m_player_position.x;
 		m_ball_direction.x *= -1;
 		return;

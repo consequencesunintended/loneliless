@@ -15,7 +15,7 @@ class ofApp : public ofBaseApp {
 	public:
 	void	setup();
 	void	update();
-	void	updateBallPosition( float dt, bool& retflag, bool& done );
+	void	updateBallPosition( float dt, bool& retflag, bool& done, float& reward );
 	void	draw();
 	bool	hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position );
 
@@ -50,6 +50,7 @@ class ofApp : public ofBaseApp {
 	int				m_elapsed_time{ 0 };
 	bool			m_initial_frames_set{ false };
 	const int		m_num_of_frames_to_buffer{ 4 };
+	int				m_current_frame = 0;
 
 	py::module py_test;
 
