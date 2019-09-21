@@ -20,6 +20,7 @@ def createNetowrk(name):
         convo_2_pooling = tf.layers.max_pooling2d(inputs=convo_2, pool_size=[2, 2], strides=2)
         convo_2_flat = tf.reshape(convo_2_pooling,[-1,20*20*64])
         hidden_1 = tf.layers.dense(convo_2_flat, 512, activation=tf.nn.relu)
+        hidden_2 = tf.layers.dense(hidden_1, 512, activation=tf.nn.relu)
         y_pred = tf.layers.dense(hidden_1, action_space_size)
         act = tf.argmax(y_pred, 1)
         enum_action = tf.placeholder(shape=[None, 2], dtype=tf.int32)
@@ -110,6 +111,8 @@ def get_frame(index):
 def get_frames():   
     return current_frames
 
+old_exploration_rate = 0
+
 def get_action():
 
     frames = get_frames()
@@ -118,7 +121,12 @@ def get_action():
     if (np.random.rand(1)) < exploration_rate:
         action[0] = np.random.randint(0, 2)
     else:
-        action = sess.run(act, feed_dict={image_1: [prev_frames]})
+        action = sess.run(act, feed_dict={image_1: [current_frames]})
+
+    global old_exploration_rate;
+    if ( old_exploration_rate != exploration_rate ):
+        print("exploration_rate=", exploration_rate)
+        old_exploration_rate = exploration_rate
 
     return action[0]
 
@@ -148,6 +156,8 @@ def add_replay_memory(action, rew, done):
 
     if episode_t % sync_size == 0:
         sess.run(Operations)
+        print("swapped")
+
 
     if done:
         total_reward.append(rewards_current_episodes)
@@ -157,5 +167,6 @@ def add_replay_memory(action, rew, done):
         rewards_current_episodes = 0
         episodes += 1
 
+        global exploration_rate
         exploration_rate = min_exploration_rate + \
                             (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)

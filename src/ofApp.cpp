@@ -27,6 +27,18 @@ void ofApp::update() {
 	ofResetElapsedTimeCounter();
 	dt += 1.0f;
 
+	auto action_pyvalue = py_test.attr( "get_action" )();
+	m_action = action_pyvalue.cast<int>();
+
+	if ( m_action == 0 )
+	{
+		moveUp( dt );
+	}
+	else
+	{
+		moveDown( dt );
+	}
+
 	bool retflag;
 	bool done;
 	float reward = 0.0f;
@@ -48,39 +60,15 @@ void ofApp::update() {
 		m_initial_frames_set = true;
 	}
 
-	if ( m_current_frame == 0 || done )
-	{
-		py_test.attr( "buffer_frame" )(frame);
-	}
+	py_test.attr( "buffer_frame" )(frame);
 
-	m_current_frame++;
-
-	if ( m_current_frame == 5 )
-	{
-		m_current_frame = 0;
-	}
-
-	auto action_pyvalue = py_test.attr( "get_action" )();
-	int action = action_pyvalue.cast<int>();
-
-	if ( action == 0 )
-	{
-		moveUp( dt );
-	}
-	else
-	{
-		moveDown( dt );
-	}
-	if ( done )
-	{
-		reward = -1.0f;
-	}
-	py_test.attr( "add_replay_memory" )(action, reward, done );
+	py_test.attr( "add_replay_memory" )(m_action, reward, done);
 
 	if ( done )
 	{
 		resetLevel();
 	}
+
 }
 
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
@@ -112,6 +100,7 @@ void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& rewa
 
 	else if ( new_ball_position.x <= 0 )
 	{
+		reward = -1.0f;
 		done = true;
 		new_ball_position = m_ball_position;
 	}
@@ -140,34 +129,28 @@ void ofApp::draw() {
 
 	ofDrawRectangle( m_ball_position.x, m_ball_position.y, m_ball_size, m_ball_size );
 
-
-	////unsigned char* test = screen[0].getPixels().getData();
-	//auto matrix = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES> >( screenTemp.getPixels().getData() );
-
-	//py_test.attr( "buffer_frame" )(matrix);
-	//py_test.attr( "get_action" )();
-
-
-	//if ( m_frames == 0 )
-	//{ 
-	//	py_test.attr( "buffer_frame" )(frame);
-	//}
-	//m_frames ++;
-
-	//if ( m_frames == 5 )
-	//{
-	//	m_frames = 0;
-	//}
-	//auto result = py_test.attr( "get_frame" )(0);
-	//auto& new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> > ();
 	//ofImage screenTemp2;
+
+	//auto result = py_test.attr( "get_frame" )(0);
+	//auto new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
 	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.draw( 0, 0 );
+	//screenTemp2.save("face0.png");
+
+	//result = py_test.attr( "get_frame" )(1);
+	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
+	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
+	//screenTemp2.save( "face1.png" );
+
+	//result = py_test.attr( "get_frame" )(2);
+	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
+	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
+	//screenTemp2.save( "face2.png" );
 
 	//result = py_test.attr( "get_frame" )(3);
 	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
 	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.draw( 0, 80 );
+	//screenTemp2.save( "face3.png" );
+
 }
 
 bool ofApp::hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position )
@@ -240,9 +223,10 @@ void ofApp::moveDown( float dx )
 
 void ofApp::resetLevel()
 {
+	m_player_position = ofVec2f( 10.0f, ofRandom( 10, HEIGHT_RES - 10 ) );
 	m_ball_position = m_ball_origin;
 	m_ball_direction = m_ball_original_direction;
-	m_ball_direction.rotate( ofRandom( 90 ) + 45 );
+	m_ball_direction.rotate( ofRandom( 40 ) + 32 );
 }
 
 //--------------------------------------------------------------

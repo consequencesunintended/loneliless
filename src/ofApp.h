@@ -51,6 +51,7 @@ class ofApp : public ofBaseApp {
 	bool			m_initial_frames_set{ false };
 	const int		m_num_of_frames_to_buffer{ 4 };
 	int				m_current_frame = 0;
+	int				m_action = 0;
 
 	py::module py_test;
 
