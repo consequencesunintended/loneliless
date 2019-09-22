@@ -19,6 +19,10 @@ void ofApp::setup() {
 	py_test = py::module::import( "py_test" );
 
 	py_test.attr( "define_globals" )();
+
+
+	auto m_num_of_frames_to_buffer_value = py_test.attr( "getFrameToStore" )();
+	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
 }
 
 //--------------------------------------------------------------
@@ -27,48 +31,64 @@ void ofApp::update() {
 	ofResetElapsedTimeCounter();
 	dt += 1.0f;
 
-	auto action_pyvalue = py_test.attr( "get_action" )();
-	m_action = action_pyvalue.cast<int>();
-
-	if ( m_action == 0 )
+	if ( m_current_frame == 0 )
 	{
-		moveUp( dt );
-	}
-	else
-	{
-		moveDown( dt );
+		auto action_pyvalue = py_test.attr( "get_action" )();
+		m_action = action_pyvalue.cast<int>();
 	}
 
-	bool retflag;
-	bool done;
-	float reward = 0.0f;
-	updateBallPosition( dt, retflag, done, reward );
-
-	ofImage screenTemp;
-
-	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
-
-	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
-
-	if ( !m_initial_frames_set )
+	if ( !m_done )
 	{
-		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+		if ( m_action == 0 )
 		{
-			py_test.attr( "buffer_frame" )(frame);
+			moveUp( dt );
 		}
-		m_initial_frames_set = true;
+		else
+		{
+			moveDown( dt );
+		}
+
+		float temp_reward;
+		updateBallPosition( dt, m_retflag, m_done, temp_reward );
+
+		m_reward += temp_reward;
 	}
 
-	py_test.attr( "buffer_frame" )(frame);
-
-	py_test.attr( "add_replay_memory" )(m_action, reward, done);
-
-	if ( done )
+	if ( m_current_frame == 0 )
 	{
-		resetLevel();
-	}
+		ofImage screenTemp;
 
+		screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+		screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
+		auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
+
+		if ( !m_initial_frames_set )
+		{
+			for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+			{
+				py_test.attr( "buffer_frame" )(frame);
+			}
+			m_initial_frames_set = true;
+		}
+
+		py_test.attr( "buffer_frame" )(frame);
+
+		py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+
+		m_reward = 0;
+
+		if ( m_done )
+		{
+			resetLevel();
+		}
+	}
+	m_current_frame++;
+
+	if ( m_current_frame == m_frames_to_skip )
+	{
+		m_current_frame = 0;		
+	}
 }
 
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
@@ -227,6 +247,9 @@ void ofApp::resetLevel()
 	m_ball_position = m_ball_origin;
 	m_ball_direction = m_ball_original_direction;
 	m_ball_direction.rotate( ofRandom( 40 ) + 32 );
+	m_done = false;
+	m_current_frame = 0;
+	m_initial_frames_set = false;
 }
 
 //--------------------------------------------------------------

@@ -6,21 +6,24 @@ import copy
 
 action_space_size = 2
 lr = 0.01
+frames_to_store = 8
 
 source_name = 'source'
 target_name = 'target'
 
+def getFrameToStore():
+    return frames_to_store
+
 def createNetowrk(name):
     with tf.variable_scope(name):
 
-        input_images = tf.placeholder(tf.float32,shape=[None, 80,80,4])
+        input_images = tf.placeholder(tf.float32,shape=[None, 80,80,frames_to_store])
         convo_1 = tf.layers.conv2d(inputs=input_images,filters=32,kernel_size=5,padding="same", activation=tf.nn.relu)
         convo_1_pooling = tf.layers.max_pooling2d(inputs=convo_1, pool_size=[2, 2], strides=2)
         convo_2 = tf.layers.conv2d(inputs=convo_1_pooling,filters=64,kernel_size=5,padding="same", activation=tf.nn.relu)
         convo_2_pooling = tf.layers.max_pooling2d(inputs=convo_2, pool_size=[2, 2], strides=2)
         convo_2_flat = tf.reshape(convo_2_pooling,[-1,20*20*64])
         hidden_1 = tf.layers.dense(convo_2_flat, 512, activation=tf.nn.relu)
-        hidden_2 = tf.layers.dense(hidden_1, 512, activation=tf.nn.relu)
         y_pred = tf.layers.dense(hidden_1, action_space_size)
         act = tf.argmax(y_pred, 1)
         enum_action = tf.placeholder(shape=[None, 2], dtype=tf.int32)
@@ -31,10 +34,10 @@ def createNetowrk(name):
         optimiser = tf.train.AdamOptimizer(1e-4)
         train = optimiser.minimize(loss, var_list=varsList)
 
-        return input_images, act, y_pred, y_true, train, enum_action
+        return input_images, act, y_pred, y_true, train, enum_action, loss
 
-image_1, act, y_pred, y_true, train_step, enum_action = createNetowrk(source_name)
-target_image_1, target_act, target_y_pred, target_y_true, target_train_step, target_enum_action = createNetowrk(target_name)
+image_1, act, y_pred, y_true, train_step, enum_action, loss_source = createNetowrk(source_name)
+target_image_1, target_act, target_y_pred, target_y_true, target_train_step, target_enum_action, loss_target = createNetowrk(target_name)
 
 source_vars = tf.trainable_variables(scope='source')
 target_vars = tf.trainable_variables(scope='target')
@@ -73,7 +76,7 @@ loss_count = 0
 replay_memory_max_size = 4000
 replay_memory = collections.deque(maxlen=replay_memory_max_size)
 total_reward = collections.deque(maxlen=100)
-frames_buffer = collections.deque(maxlen=4)
+frames_buffer = collections.deque(maxlen=frames_to_store)
 sync_size = 1000
 batch_size = 32
 saver = tf.train.Saver()
@@ -82,7 +85,7 @@ sess = tf.compat.v1.Session()
 resized_screen = np.zeros((80,80))
 sess.run(init)
 
-empty_frame = np.zeros((80,80,4))
+empty_frame = np.zeros((80,80,frames_to_store))
 frames_buffer.append(empty_frame)
 current_frames = np.dstack(frames_buffer)   
 prev_frames = np.dstack(frames_buffer)  
@@ -127,8 +130,13 @@ def get_action():
     if ( old_exploration_rate != exploration_rate ):
         print("exploration_rate=", exploration_rate)
         old_exploration_rate = exploration_rate
+        print("replay memory size=", len(replay_memory))
+        print("loss value=", loss_value)
 
     return action[0]
+
+
+loss_value = 0.0
 
 def add_replay_memory(action, rew, done):
     global episode_t
@@ -139,7 +147,7 @@ def add_replay_memory(action, rew, done):
 
     global rewards_current_episodes
     rewards_current_episodes += rew
-
+    
     if len(replay_memory) == replay_memory_max_size:
 
         indicies = np.random.randint(0,replay_memory_max_size,size=batch_size)
@@ -152,6 +160,10 @@ def add_replay_memory(action, rew, done):
         for i in range(batch_size):
             action_array.append([i, action_list[i]])
         sess.run(train_step, feed_dict={image_1: prev_state_list,enum_action: action_array,y_true: q_true_values})
+        global loss_value
+        loss_value = sess.run(loss_source, feed_dict={image_1: prev_state_list,enum_action: action_array,y_true: q_true_values})
+
+
 
 
     if episode_t % sync_size == 0:

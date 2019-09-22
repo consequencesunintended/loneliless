@@ -49,9 +49,13 @@ class ofApp : public ofBaseApp {
 	int				m_end_time{ 0 };
 	int				m_elapsed_time{ 0 };
 	bool			m_initial_frames_set{ false };
-	const int		m_num_of_frames_to_buffer{ 4 };
-	int				m_current_frame = 0;
-	int				m_action = 0;
+	int				m_num_of_frames_to_buffer;
+	int				m_current_frame{ 0 };
+	int				m_action{ 0 };
+	int				m_frames_to_skip{ 5 };
+	bool			m_retflag;
+	bool			m_done;
+	float			m_reward{ 0.0f };
 
 	py::module py_test;
 
