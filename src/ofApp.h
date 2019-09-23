@@ -10,30 +10,38 @@
 
 namespace py = pybind11;
 
-class ofApp : public ofBaseApp {
-
+class ofApp : public ofBaseApp
+{
 	public:
-	void	setup();
-	void	update();
-	void	updateBallPosition( float dt, bool& retflag, bool& done, float& reward );
-	void	draw();
-	bool	hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position );
 
-	void	moveUp( float dx );
+	enum GAMEMODE
+	{
+		PLAYER_MODE,
+		AI_TRAIN_MODE,
+		AI_RESTORE_MODE
+	};
 
-	void	keyPressed( int key );
-	void	moveDown( float dx );
-	void	resetLevel();
-	void	keyReleased( int key );
-	void	mouseMoved( int x, int y );
-	void	mouseDragged( int x, int y, int button );
-	void	mousePressed( int x, int y, int button );
-	void	mouseReleased( int x, int y, int button );
-	void	mouseEntered( int x, int y );
-	void	mouseExited( int x, int y );
-	void	windowResized( int w, int h );
-	void	dragEvent( ofDragInfo dragInfo );
-	void	gotMessage( ofMessage msg );
+	void			setup();
+	void			update();
+	void			updateBallPosition( float dt, bool& retflag, bool& done, float& reward );
+	void			draw();
+	bool			hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position );
+
+	void			moveUp( float dx );
+
+	void			keyPressed( int key );
+	void			moveDown( float dx );
+	void			resetLevel();
+	void			keyReleased( int key );
+	void			mouseMoved( int x, int y );
+	void			mouseDragged( int x, int y, int button );
+	void			mousePressed( int x, int y, int button );
+	void			mouseReleased( int x, int y, int button );
+	void			mouseEntered( int x, int y );
+	void			mouseExited( int x, int y );
+	void			windowResized( int w, int h );
+	void			dragEvent( ofDragInfo dragInfo );
+	void			gotMessage( ofMessage msg );
 
 	private:
 	int				m_player_length{ HEIGHT_RES / 9 };
@@ -56,8 +64,9 @@ class ofApp : public ofBaseApp {
 	bool			m_retflag;
 	bool			m_done;
 	float			m_reward{ 0.0f };
+	GAMEMODE		m_game_mode{ PLAYER_MODE };
 
-	py::module py_test;
+	py::module		py_test;
 
 	py::scoped_interpreter guard{};
 

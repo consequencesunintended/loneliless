@@ -4,7 +4,7 @@ import numpy as np
 import cv2
 import copy 
 
-action_space_size = 2
+action_space_size = 3
 lr = 0.01
 frames_to_store = 8
 
@@ -63,7 +63,7 @@ gamma = 0.99
 train_episodes = 4000
 episodes = 0
 episode_t = 0
-save_sync = 100
+save_sync = 1000
 
 rewards_all_episodes = []
 num_episodes = 1000
@@ -122,7 +122,7 @@ def get_action():
     action = [0]
 
     if (np.random.rand(1)) < exploration_rate:
-        action[0] = np.random.randint(0, 2)
+        action[0] = np.random.randint(0, action_space_size)
     else:
         action = sess.run(act, feed_dict={image_1: [current_frames]})
 
@@ -178,6 +178,10 @@ def add_replay_memory(action, rew, done):
         print(np.mean([total_reward[x] for x in range(len(total_reward))]))
         rewards_current_episodes = 0
         episodes += 1
+
+        if episodes % save_sync == 0:
+            save_path = saver.save(sess, "/tmp2/Lone.ckpt")
+            print("Model saved in path: %s" % save_path)
 
         global exploration_rate
         exploration_rate = min_exploration_rate + \

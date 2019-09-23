@@ -29,66 +29,80 @@ void ofApp::setup() {
 void ofApp::update() {
 	float dt = (float)ofGetElapsedTimeMillis() / 1000.0f;
 	ofResetElapsedTimeCounter();
-	dt += 1.0f;
+	dt += 0.5f;
 
-	if ( m_current_frame == 0 )
+	if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
 	{
-		auto action_pyvalue = py_test.attr( "get_action" )();
-		m_action = action_pyvalue.cast<int>();
+		if ( m_current_frame == 0 )
+		{
+			auto action_pyvalue = py_test.attr( "get_action" )();
+			m_action = action_pyvalue.cast<int>();
+		}
+
+		if ( !m_done )
+		{
+			if ( m_action == 0 )
+			{
+				moveUp( dt );
+			}
+			else if ( m_action == 2 )
+			{
+				moveDown( dt );
+			}
+
+			float temp_reward;
+			updateBallPosition( dt, m_retflag, m_done, temp_reward );
+
+			m_reward += temp_reward;
+		}
+
+		if ( m_current_frame == 0 )
+		{
+			ofImage screenTemp;
+
+			screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+			screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
+			auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
+
+			if ( !m_initial_frames_set )
+			{
+				for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+				{
+					py_test.attr( "buffer_frame" )(frame);
+				}
+				m_initial_frames_set = true;
+			}
+
+			py_test.attr( "buffer_frame" )(frame);
+
+			py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+
+			m_reward = 0;
+
+			if ( m_done )
+			{
+				resetLevel();
+			}
+		}
+		m_current_frame++;
+
+		if ( m_current_frame == m_frames_to_skip )
+		{
+			m_current_frame = 0;
+		}
 	}
-
-	if ( !m_done )
+	else if ( m_game_mode == GAMEMODE::PLAYER_MODE )
 	{
-		if ( m_action == 0 )
-		{
-			moveUp( dt );
-		}
-		else
-		{
-			moveDown( dt );
-		}
-
 		float temp_reward;
 		updateBallPosition( dt, m_retflag, m_done, temp_reward );
-
-		m_reward += temp_reward;
-	}
-
-	if ( m_current_frame == 0 )
-	{
-		ofImage screenTemp;
-
-		screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-		screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
-
-		auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
-
-		if ( !m_initial_frames_set )
-		{
-			for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
-			{
-				py_test.attr( "buffer_frame" )(frame);
-			}
-			m_initial_frames_set = true;
-		}
-
-		py_test.attr( "buffer_frame" )(frame);
-
-		py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
-
-		m_reward = 0;
 
 		if ( m_done )
 		{
 			resetLevel();
 		}
 	}
-	m_current_frame++;
 
-	if ( m_current_frame == m_frames_to_skip )
-	{
-		m_current_frame = 0;		
-	}
 }
 
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
@@ -141,35 +155,12 @@ void ofApp::draw() {
 	ofBackground( ofColor::black );
 
 	ofSetHexColor( 0xffffff );
-	//vagRounded.drawString( std::to_string( m_elapsed_time / 1000 ), 70, 70 );
 
 
 	ofFill();
 	ofDrawRectangle( m_player_position.x, m_player_position.y, m_ball_size, m_player_length );
 
 	ofDrawRectangle( m_ball_position.x, m_ball_position.y, m_ball_size, m_ball_size );
-
-	//ofImage screenTemp2;
-
-	//auto result = py_test.attr( "get_frame" )(0);
-	//auto new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
-	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.save("face0.png");
-
-	//result = py_test.attr( "get_frame" )(1);
-	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
-	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.save( "face1.png" );
-
-	//result = py_test.attr( "get_frame" )(2);
-	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
-	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.save( "face2.png" );
-
-	//result = py_test.attr( "get_frame" )(3);
-	//new_image = result.cast< Eigen::Matrix<unsigned char, WIDTH_RES / 2, HEIGHT_RES / 2> >();
-	//screenTemp2.setFromPixels( new_image.data(), WIDTH_RES / 2, HEIGHT_RES / 2, ofImageType::OF_IMAGE_GRAYSCALE );
-	//screenTemp2.save( "face3.png" );
 
 }
 
@@ -180,8 +171,8 @@ bool ofApp::hasCollidedWithPlayer( const ofVec2f& ball_current_position, const o
 	ofVec2f player_position_start = m_player_position;
 	ofVec2f player_position_end = player_position_start;
 
-	player_position_end.y += m_player_length;
-
+	player_position_end.y += m_player_length + m_ball_size;
+	player_position_start.y -= m_ball_size;
 	return ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, ball_current_position, ball_new_position, interSection );
 }
 
@@ -209,19 +200,23 @@ void ofApp::keyPressed( int key ) {
 		m_key_pressed = true;
 
 	}
-	dt += 1.0f;
+	dt += 0.5f;
 
 	float dx = 5.0f * dt;
 
-	if ( key == OF_KEY_UP )
+	if ( m_game_mode == GAMEMODE::PLAYER_MODE )
 	{
-		moveUp( dx );
+		if ( key == OF_KEY_UP )
+		{
+			moveUp( dx );
+		}
+		else if ( key == OF_KEY_DOWN )
+		{
+			moveDown( dx );
+		}
 	}
-	else if ( key == OF_KEY_DOWN )
-	{
-		moveDown( dx );
-	}
-	else if ( key == OF_KEY_F10 )
+
+	if ( key == OF_KEY_F10 )
 	{
 		resetLevel();
 	}
