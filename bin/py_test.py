@@ -186,3 +186,16 @@ def add_replay_memory(action, rew, done):
         global exploration_rate
         exploration_rate = min_exploration_rate + \
                             (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)
+
+
+def restoreMode():
+    saver.restore(sess, "/tmp2/Lone.ckpt")
+    print("Model restored")
+
+def get_trained_action():
+
+    action = [0]
+
+    action = sess.run(act, feed_dict={image_1: [current_frames]})
+
+    return action[0]

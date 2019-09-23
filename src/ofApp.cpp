@@ -23,19 +23,33 @@ void ofApp::setup() {
 
 	auto m_num_of_frames_to_buffer_value = py_test.attr( "getFrameToStore" )();
 	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
+
+	if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+	{
+		py_test.attr( "restoreMode" )();
+	}
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
 	float dt = (float)ofGetElapsedTimeMillis() / 1000.0f;
 	ofResetElapsedTimeCounter();
-	dt += 0.5f;
+	dt += 1.0f;
 
-	if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
+	if ( ( m_game_mode == GAMEMODE::AI_TRAIN_MODE ) || ( m_game_mode == GAMEMODE::AI_RESTORE_MODE ) )
 	{
 		if ( m_current_frame == 0 )
 		{
-			auto action_pyvalue = py_test.attr( "get_action" )();
+			py::object action_pyvalue;
+
+			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
+			{
+				action_pyvalue = py_test.attr( "get_action" )();
+			}
+			else
+			{
+				action_pyvalue = py_test.attr( "get_trained_action" )();
+			}
 			m_action = action_pyvalue.cast<int>();
 		}
 
@@ -73,10 +87,12 @@ void ofApp::update() {
 				}
 				m_initial_frames_set = true;
 			}
-
 			py_test.attr( "buffer_frame" )(frame);
 
-			py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
+			{
+				py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+			}
 
 			m_reward = 0;
 
@@ -102,7 +118,46 @@ void ofApp::update() {
 			resetLevel();
 		}
 	}
+	//else if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+	//{
+	//	ofImage screenTemp;
 
+	//	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+	//	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
+	//	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
+
+	//	float temp_reward;
+	//	updateBallPosition( dt, m_retflag, m_done, temp_reward );
+
+	//	if ( !m_initial_frames_set )
+	//	{
+	//		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+	//		{
+	//			py_test.attr( "buffer_frame" )(frame);
+	//		}
+	//		m_initial_frames_set = true;
+	//	}
+
+	//	py_test.attr( "buffer_frame" )(frame);
+
+	//	if ( m_done )
+	//	{
+	//		resetLevel();
+	//	}
+
+	//	auto action_pyvalue = py_test.attr( "get_trained_action" )();
+	//	m_action = action_pyvalue.cast<int>();
+
+	//	if ( m_action == 0 )
+	//	{
+	//		moveUp( dt );
+	//	}
+	//	else if ( m_action == 2 )
+	//	{
+	//		moveDown( dt );
+	//	}
+	//}
 }
 
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
@@ -189,7 +244,7 @@ void ofApp::moveUp( float dx )
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed( int key ) {
+void ofApp::keyPressed( int key ) {\
 
 	float dt = (float)ofGetElapsedTimeMillis() / 1000.0f;
 	ofResetElapsedTimeCounter();
@@ -200,7 +255,7 @@ void ofApp::keyPressed( int key ) {
 		m_key_pressed = true;
 
 	}
-	dt += 0.5f;
+	dt += 1.0f;
 
 	float dx = 5.0f * dt;
 
