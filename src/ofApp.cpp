@@ -112,7 +112,15 @@ void ofApp::update() {
 
 			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
 			{
-				m_dqn_module.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+				py::object is_finished_training_value = m_dqn_module.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+				bool is_finished_training = is_finished_training_value.cast<bool>();
+
+				if ( is_finished_training )
+				{
+					m_dqn_module.attr( "restoreMode" )();
+					m_game_mode = GAMEMODE::AI_RESTORE_MODE;
+					return;
+				}
 			}
 
 			m_reward = 0;

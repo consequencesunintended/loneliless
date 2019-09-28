@@ -3,6 +3,10 @@ import collections
 import numpy as np
 import cv2
 import copy 
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
 
 action_space_size = 3
 lr = 0.01
@@ -61,9 +65,11 @@ init = tf.compat.v1.global_variables_initializer()
 
 gamma = 0.99
 train_episodes = 4000
-episodes = 0
+episodes = 1
 episode_t = 0
-save_sync = 1000
+step_num = 0
+save_sync = 10
+total_training_episodes = 30
 loss_value = 0.0
 rewards_current_episodes = 0.0
 rewards_all_episodes = []
@@ -107,8 +113,6 @@ def get_frame(index):
 def get_frames():   
     return current_frames
 
-old_exploration_rate = 0
-
 def get_action():
 
     frames = get_frames()
@@ -119,19 +123,14 @@ def get_action():
     else:
         action = sess.run(act, feed_dict={image_1: [current_frames]})
 
-    global old_exploration_rate;
-    if ( old_exploration_rate != exploration_rate ):
-        print("exploration_rate=", exploration_rate)
-        old_exploration_rate = exploration_rate
-        print("replay memory size=", len(replay_memory))
-        print("loss value=", loss_value)
-
     return action[0]
 
 
 def add_replay_memory(action, rew, done):
     global episode_t
     episode_t += 1
+    global step_num
+    step_num += 1
     done_value = 0.0 if done == True else 1.0
     exp = Experience(prev_frames, action, rew, done_value, current_frames)
     replay_memory.append(exp)
@@ -155,23 +154,32 @@ def add_replay_memory(action, rew, done):
         loss_value = sess.run(loss_source, feed_dict={image_1: prev_state_list,enum_action: action_array,y_true: q_true_values})
 
     if episode_t % sync_size == 0:
-        sess.run(Operations)
+        sess.run(Operations)   
+        
+    if step_num == 10000:  
+        done = True
 
     if done:
         total_reward.append(rewards_current_episodes)
         global episodes
-        print( "Episode:", episodes )
-        print(np.mean([total_reward[x] for x in range(len(total_reward))]))
-        rewards_current_episodes = 0
-        episodes += 1
+        print( "[ Episode: %d / %d ]: Mean Reward: %f " % (episodes, total_training_episodes, np.mean([total_reward[x] for x in range(len(total_reward))])) )
+        rewards_current_episodes = 0        
+        step_num = 0
 
         if episodes % save_sync == 0:
             save_path = saver.save(sess, modelPath)
             print("Model saved in path: %s" % save_path)
 
+        if episodes == total_training_episodes:
+            print("Model finished training")
+            return True
+
+        episodes += 1
+
         global exploration_rate
-        exploration_rate = min_exploration_rate + \
-                            (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)
+        exploration_rate = min_exploration_rate + (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)
+
+    return False
 
 def setSavedModelPath(path):
     global modelPath
