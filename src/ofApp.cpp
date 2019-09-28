@@ -24,6 +24,9 @@ void ofApp::setup() {
 
 	py_test.attr( "define_globals" )();
 
+	std::string model_path = default_directory + "/data/model/Lone.ckpt";
+	py_test.attr( "setSavedModelPath" )(model_path);
+
 	auto m_num_of_frames_to_buffer_value = py_test.attr( "getFrameToStore" )();
 	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
 

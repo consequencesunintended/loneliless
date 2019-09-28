@@ -79,6 +79,7 @@ total_reward = collections.deque(maxlen=100)
 frames_buffer = collections.deque(maxlen=frames_to_store)
 sync_size = 1000
 batch_size = 32
+modelPath = ""
 saver = tf.train.Saver()
 Experience = collections.namedtuple("Experience", field_names=['state', 'action', 'reward', 'done', 'new_state'])
 sess = tf.compat.v1.Session()
@@ -180,16 +181,19 @@ def add_replay_memory(action, rew, done):
         episodes += 1
 
         if episodes % save_sync == 0:
-            save_path = saver.save(sess, "/tmp2/Lone.ckpt")
+            save_path = saver.save(sess, modelPath)
             print("Model saved in path: %s" % save_path)
 
         global exploration_rate
         exploration_rate = min_exploration_rate + \
                             (max_exploration_rate - min_exploration_rate) * np.exp(-exploration_decay_rate * episodes)
 
+def setSavedModelPath(path):
+    global modelPath
+    modelPath = path
 
 def restoreMode():
-    saver.restore(sess, "/tmp2/Lone.ckpt")
+    saver.restore(sess, modelPath)
     print("Model restored")
 
 def get_trained_action():
