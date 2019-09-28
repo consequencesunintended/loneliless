@@ -105,10 +105,6 @@ def buffer_frame(frame):
     prev_frames = current_frames
     current_frames = np.dstack(frames_buffer)   
 
-def define_globals():
-    global rewards_current_episodes
-    rewards_current_episodes = 0.0
-
 def get_frame(index):    
     return current_frames[:,:,index]
 

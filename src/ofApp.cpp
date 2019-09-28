@@ -7,7 +7,6 @@
 
 //--------------------------------------------------------------
 void ofApp::setup() {
-	//vagRounded.load( "vag.ttf", 32 );
 
 	m_ball_origin = m_ball_position;
 	m_ball_original_direction = m_ball_direction;
@@ -16,23 +15,21 @@ void ofApp::setup() {
 
 	Py_SetProgramName( (wchar_t*)"PYTHON" );
 
-	std::string default_directory = ofFilePath::getCurrentExeDir();
-	py::module sys = py::module::import( "sys" );
-	sys.attr( "path" ).attr( "insert" )(1, default_directory + "/data" );
+	const std::string&	data_directory = ofToDataPath( "", true );	
+	py::module			sys = py::module::import( "sys" );
 
-	py_test = py::module::import( "dqn" );
+	sys.attr( "path" ).attr( "insert" )(1, data_directory);
+	m_dqn_module = py::module::import( "dqn" );
 
-	py_test.attr( "define_globals" )();
+	std::string model_path = data_directory + "/model/loneliless.ckpt";
+	m_dqn_module.attr( "setSavedModelPath" )(model_path);
 
-	std::string model_path = default_directory + "/data/model/Lone.ckpt";
-	py_test.attr( "setSavedModelPath" )(model_path);
-
-	auto m_num_of_frames_to_buffer_value = py_test.attr( "getFrameToStore" )();
+	auto m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getFrameToStore" )();
 	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
 
 	if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
 	{
-		py_test.attr( "restoreMode" )();
+		m_dqn_module.attr( "restoreMode" )();
 	}
 }
 
@@ -50,11 +47,11 @@ void ofApp::update() {
 
 			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
 			{
-				action_pyvalue = py_test.attr( "get_action" )();
+				action_pyvalue = m_dqn_module.attr( "get_action" )();
 			}
 			else
 			{
-				action_pyvalue = py_test.attr( "get_trained_action" )();
+				action_pyvalue = m_dqn_module.attr( "get_trained_action" )();
 			}
 			m_action = action_pyvalue.cast<int>();
 		}
@@ -89,15 +86,15 @@ void ofApp::update() {
 			{
 				for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
 				{
-					py_test.attr( "buffer_frame" )(frame);
+					m_dqn_module.attr( "buffer_frame" )(frame);
 				}
 				m_initial_frames_set = true;
 			}
-			py_test.attr( "buffer_frame" )(frame);
+			m_dqn_module.attr( "buffer_frame" )(frame);
 
 			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
 			{
-				py_test.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+				m_dqn_module.attr( "add_replay_memory" )(m_action, m_reward, m_done);
 			}
 
 			m_reward = 0;
@@ -124,46 +121,6 @@ void ofApp::update() {
 			resetLevel();
 		}
 	}
-	//else if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
-	//{
-	//	ofImage screenTemp;
-
-	//	screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-	//	screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
-
-	//	auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
-
-	//	float temp_reward;
-	//	updateBallPosition( dt, m_retflag, m_done, temp_reward );
-
-	//	if ( !m_initial_frames_set )
-	//	{
-	//		for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
-	//		{
-	//			py_test.attr( "buffer_frame" )(frame);
-	//		}
-	//		m_initial_frames_set = true;
-	//	}
-
-	//	py_test.attr( "buffer_frame" )(frame);
-
-	//	if ( m_done )
-	//	{
-	//		resetLevel();
-	//	}
-
-	//	auto action_pyvalue = py_test.attr( "get_trained_action" )();
-	//	m_action = action_pyvalue.cast<int>();
-
-	//	if ( m_action == 0 )
-	//	{
-	//		moveUp( dt );
-	//	}
-	//	else if ( m_action == 2 )
-	//	{
-	//		moveDown( dt );
-	//	}
-	//}
 }
 
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )

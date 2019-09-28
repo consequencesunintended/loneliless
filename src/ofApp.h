@@ -66,9 +66,9 @@ class ofApp : public ofBaseApp
 	float			m_reward{ 0.0f };
 	GAMEMODE		m_game_mode{ AI_RESTORE_MODE };
 
-	py::module		py_test;
+	py::module		m_dqn_module;
 
-	py::scoped_interpreter guard{};
+	py::scoped_interpreter m_guard{};
 
 	//ofTrueTypeFont 	vagRounded;
 };
