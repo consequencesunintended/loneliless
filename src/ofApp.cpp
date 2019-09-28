@@ -15,21 +15,39 @@ void ofApp::setup() {
 
 	Py_SetProgramName( (wchar_t*)"PYTHON" );
 
+	// make sure the data directory is been added to python path, so 
+	// .py files can be loaded from the default data folder
 	const std::string&	data_directory = ofToDataPath( "", true );	
 	py::module			sys = py::module::import( "sys" );
 
 	sys.attr( "path" ).attr( "insert" )(1, data_directory);
+
+	// import dqn.py 
 	m_dqn_module = py::module::import( "dqn" );
 
-	std::string model_path = data_directory + "/model/loneliless.ckpt";
-	m_dqn_module.attr( "setSavedModelPath" )(model_path);
+	// set the default location for saving and restoring the model variables
+	const std::string&	model_directory_string = data_directory + "/model";
+	const std::string&	model_variables_path = model_directory_string + "/loneliless.ckpt";
 
-	auto m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getFrameToStore" )();
+	m_dqn_module.attr( "setSavedModelPath" )(model_variables_path);
+
+	py::object			m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getNumFramesToStore" )();
+
 	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
 
-	if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+	ofDirectory			model_directory( model_directory_string );
+
+	if ( model_directory.exists() && model_directory.getFiles().size() )
 	{
-		m_dqn_module.attr( "restoreMode" )();
+		if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+		{
+			m_dqn_module.attr( "restoreMode" )();
+		}
+	}
+	else
+	{
+		model_directory.create();
+		m_game_mode = GAMEMODE::AI_TRAIN_MODE;
 	}
 }
 
@@ -66,8 +84,8 @@ void ofApp::update() {
 			{
 				moveDown( dt );
 			}
-
 			float temp_reward;
+
 			updateBallPosition( dt, m_retflag, m_done, temp_reward );
 
 			m_reward += temp_reward;

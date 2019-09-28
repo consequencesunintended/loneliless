@@ -11,7 +11,7 @@ frames_to_store = 8
 source_name = 'source'
 target_name = 'target'
 
-def getFrameToStore():
+def getNumFramesToStore():
     return frames_to_store
 
 def createNetowrk(name):
@@ -64,7 +64,8 @@ train_episodes = 4000
 episodes = 0
 episode_t = 0
 save_sync = 1000
-
+loss_value = 0.0
+rewards_current_episodes = 0.0
 rewards_all_episodes = []
 num_episodes = 1000
 exploration_rate = 1
@@ -91,11 +92,6 @@ frames_buffer.append(empty_frame)
 current_frames = np.dstack(frames_buffer)   
 prev_frames = np.dstack(frames_buffer)  
 
-
-def resize(frame):
-    resized_screen = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
-    x_t = np.reshape(resized_screen, [80, 80, 1])
-    return x_t.astype(np.uint8)
 
 def buffer_frame(frame):
     frame = cv2.resize(frame, (80, 80), interpolation=cv2.INTER_AREA)
@@ -133,8 +129,6 @@ def get_action():
     return action[0]
 
 
-loss_value = 0.0
-
 def add_replay_memory(action, rew, done):
     global episode_t
     episode_t += 1
@@ -160,13 +154,8 @@ def add_replay_memory(action, rew, done):
         global loss_value
         loss_value = sess.run(loss_source, feed_dict={image_1: prev_state_list,enum_action: action_array,y_true: q_true_values})
 
-
-
-
     if episode_t % sync_size == 0:
         sess.run(Operations)
-        print("swapped")
-
 
     if done:
         total_reward.append(rewards_current_episodes)
@@ -193,9 +182,6 @@ def restoreMode():
     print("Model restored")
 
 def get_trained_action():
-
     action = [0]
-
     action = sess.run(act, feed_dict={image_1: [current_frames]})
-
     return action[0]
