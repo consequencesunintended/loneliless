@@ -16,6 +16,10 @@ void ofApp::setup() {
 
 	Py_SetProgramName( (wchar_t*)"PYTHON" );
 
+	std::string default_directory = ofFilePath::getCurrentWorkingDirectory();
+	py::module sys = py::module::import( "sys" );
+	sys.attr( "path" ).attr( "insert" )(1, default_directory + "/data" );
+
 	py_test = py::module::import( "py_test" );
 
 	py_test.attr( "define_globals" )();
