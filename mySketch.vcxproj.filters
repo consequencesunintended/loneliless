@@ -1228,7 +1228,7 @@
     <ResourceCompile Include="icon.rc" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="bin\py_test.py">
+    <None Include="bin\data\dqn.py">
       <Filter>bin</Filter>
     </None>
   </ItemGroup>
