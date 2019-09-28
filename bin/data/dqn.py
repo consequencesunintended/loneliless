@@ -9,7 +9,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
 
 action_space_size = 3
-lr = 0.01
 frames_to_store = 8
 
 source_name = 'source'
@@ -68,8 +67,8 @@ train_episodes = 4000
 episodes = 1
 episode_t = 0
 step_num = 0
-save_sync = 10
-total_training_episodes = 30
+save_sync = 1000
+total_training_episodes = 3000
 loss_value = 0.0
 rewards_current_episodes = 0.0
 rewards_all_episodes = []
