@@ -20,7 +20,6 @@ void ofApp::setup() {
 
 	py_test.attr( "define_globals" )();
 
-
 	auto m_num_of_frames_to_buffer_value = py_test.attr( "getFrameToStore" )();
 	m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
 
