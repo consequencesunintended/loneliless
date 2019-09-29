@@ -66,7 +66,6 @@ gamma = 0.99
 train_episodes = 4000
 episodes = 1
 episode_t = 0
-step_num = 0
 save_sync = 1000
 total_training_episodes = 3000
 loss_value = 0.0
@@ -128,8 +127,6 @@ def get_action():
 def add_replay_memory(action, rew, done):
     global episode_t
     episode_t += 1
-    global step_num
-    step_num += 1
     done_value = 0.0 if done == True else 1.0
     exp = Experience(prev_frames, action, rew, done_value, current_frames)
     replay_memory.append(exp)
@@ -154,16 +151,13 @@ def add_replay_memory(action, rew, done):
 
     if episode_t % sync_size == 0:
         sess.run(Operations)   
-        
-    if step_num == 10000:  
-        done = True
+
 
     if done:
         total_reward.append(rewards_current_episodes)
         global episodes
         print( "[ Episode: %d / %d ]: Mean Reward: %f " % (episodes, total_training_episodes, np.mean([total_reward[x] for x in range(len(total_reward))])) )
         rewards_current_episodes = 0        
-        step_num = 0
 
         if episodes % save_sync == 0:
             save_path = saver.save(sess, modelPath)
