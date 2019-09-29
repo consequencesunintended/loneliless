@@ -12,7 +12,7 @@ namespace py = pybind11;
 
 class ofApp : public ofBaseApp
 {
-	public:
+public:
 
 	enum GAMEMODE
 	{
@@ -43,7 +43,8 @@ class ofApp : public ofBaseApp
 	void			dragEvent( ofDragInfo dragInfo );
 	void			gotMessage( ofMessage msg );
 
-	private:
+private:
+
 	int				m_player_length{ HEIGHT_RES / 9 };
 	ofVec2f			m_player_position{ 10.0f, 0.0f };
 	ofVec2f			m_ball_position{ WIDTH_RES / 2, HEIGHT_RES / 2 };
@@ -68,8 +69,5 @@ class ofApp : public ofBaseApp
 	int				m_steps{ 0 };
 
 	py::module		m_dqn_module;
-
 	py::scoped_interpreter m_guard{};
-
-	//ofTrueTypeFont 	vagRounded;
 };
