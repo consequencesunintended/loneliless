@@ -12,7 +12,6 @@ void ofApp::setup() {
 	m_ball_original_direction = m_ball_direction;
 	resetLevel();
 
-
 	Py_SetProgramName( (wchar_t*)"PYTHON" );
 
 	// make sure the data directory is been added to python path, so 
