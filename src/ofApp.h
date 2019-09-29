@@ -64,7 +64,7 @@ class ofApp : public ofBaseApp
 	bool			m_retflag;
 	bool			m_done;
 	float			m_reward{ 0.0f };
-	GAMEMODE		m_game_mode{ PLAYER_MODE };
+	GAMEMODE		m_game_mode{ AI_RESTORE_MODE };
 	int				m_steps{ 0 };
 
 	py::module		m_dqn_module;
