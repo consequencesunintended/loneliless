@@ -19,134 +19,163 @@ void ofApp::setup() {
 	{
 		// make sure the data directory is been added to python path, so 
 		// .py files can be loaded from the default data folder
-		const std::string&	data_directory = ofToDataPath( "", true );	
+		const std::string& data_directory = ofToDataPath( "", true );
 		py::module			sys = py::module::import( "sys" );
 
 		sys.attr( "path" ).attr( "insert" )(1, data_directory);
 
-		// import dqn.py 
-		m_dqn_module = py::module::import( "dqn" );
-
-		// set the default location for saving and restoring the model variables
-		const std::string& model_directory_string = data_directory + "/model";
-		const std::string& model_variables_path = model_directory_string + "/loneliless.ckpt";
-
-		m_dqn_module.attr( "setSavedModelPath" )(model_variables_path);
-
-		py::object			m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getNumFramesToStore" )();
-
-		m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
-
-		ofDirectory			model_directory( model_directory_string );
-
-		if ( model_directory.exists() && model_directory.getFiles().size() )
+		try
 		{
-			if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+			// import dqn.py 
+			m_dqn_module = py::module::import( "dqn" );
+
+
+			// set the default location for saving and restoring the model variables
+			const std::string& model_directory_string = data_directory + "/model";
+			const std::string& model_variables_path = model_directory_string + "/loneliless.ckpt";
+
+			m_dqn_module.attr( "setSavedModelPath" )(model_variables_path);
+
+			py::object			m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getNumFramesToStore" )();
+
+			m_num_of_frames_to_buffer = m_num_of_frames_to_buffer_value.cast<int>();
+
+			ofDirectory			model_directory( model_directory_string );
+
+			if ( model_directory.exists() && model_directory.getFiles().size() )
 			{
-				m_dqn_module.attr( "restoreMode" )();
+				if ( m_game_mode == GAMEMODE::AI_RESTORE_MODE )
+				{
+					m_dqn_module.attr( "restoreMode" )();
+				}
+			}
+			else
+			{
+				model_directory.create();
+				m_game_mode = GAMEMODE::AI_TRAIN_MODE;
 			}
 		}
-		else
+		catch ( py::error_already_set& a )
 		{
-			model_directory.create();
-			m_game_mode = GAMEMODE::AI_TRAIN_MODE;
+			std::string error;
+
+			error = a.what();
+
+
+			for ( int i = 0; i < error.size(); i++ )
+			{
+				cout << error[i];
+			}
 		}
 	}
 }
 
 //--------------------------------------------------------------
 void ofApp::update() {
-	float dt = (float)ofGetElapsedTimeMillis() / 1000.0f;
-	ofResetElapsedTimeCounter();
-	dt += 1.0f;
+	float dt = 1.0f;
 
-	if ( ( m_game_mode == GAMEMODE::AI_TRAIN_MODE ) || ( m_game_mode == GAMEMODE::AI_RESTORE_MODE ) )
+	try
 	{
-		if ( m_current_frame == 0 )
+		if ( (m_game_mode == GAMEMODE::AI_TRAIN_MODE) || (m_game_mode == GAMEMODE::AI_RESTORE_MODE) )
 		{
-			py::object action_pyvalue;
+			if ( m_current_frame == 0 )
+			{
+				py::object action_pyvalue;
 
-			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
-			{
-				action_pyvalue = m_dqn_module.attr( "get_action" )();
+				if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
+				{
+					action_pyvalue = m_dqn_module.attr( "get_action" )();
+				}
+				else
+				{
+					action_pyvalue = m_dqn_module.attr( "get_trained_action" )();
+				}
+				m_action = action_pyvalue.cast<int>();
 			}
-			else
+
+			if ( !m_done )
 			{
-				action_pyvalue = m_dqn_module.attr( "get_trained_action" )();
+				if ( m_action == 0 )
+				{
+					moveUp( dt );
+				}
+				else if ( m_action == 2 )
+				{
+					moveDown( dt );
+				}
+				float temp_reward;
+
+				updateBallPosition( dt, m_retflag, m_done, temp_reward );
+				m_reward += temp_reward;
 			}
-			m_action = action_pyvalue.cast<int>();
+
+			if ( m_current_frame == 0 )
+			{
+				ofImage screenTemp;
+
+				screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
+				screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
+
+				auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
+
+				if ( !m_initial_frames_set )
+				{
+					for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
+					{
+						m_dqn_module.attr( "buffer_frame" )(frame);
+					}
+					m_initial_frames_set = true;
+				}
+				m_dqn_module.attr( "buffer_frame" )(frame);
+
+				if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
+				{
+					py::object is_finished_training_value = m_dqn_module.attr( "add_replay_memory" )(m_action, m_reward, m_done);
+					bool is_finished_training = is_finished_training_value.cast<bool>();
+
+					if ( is_finished_training )
+					{
+						m_dqn_module.attr( "restoreMode" )();
+						m_game_mode = GAMEMODE::AI_RESTORE_MODE;
+						return;
+					}
+				}
+
+				m_reward = 0;
+
+				if ( m_done )
+				{
+					resetLevel();
+				}
+			}
+			m_current_frame++;
+
+			if ( m_current_frame == m_frames_to_skip )
+			{
+				m_current_frame = 0;
+			}
 		}
-
-		if ( !m_done )
+		else if ( m_game_mode == GAMEMODE::PLAYER_MODE )
 		{
-			if ( m_action == 0 )
-			{
-				moveUp( dt );
-			}
-			else if ( m_action == 2 )
-			{
-				moveDown( dt );
-			}
 			float temp_reward;
-
 			updateBallPosition( dt, m_retflag, m_done, temp_reward );
-			m_reward += temp_reward;
-		}
-
-		if ( m_current_frame == 0 )
-		{
-			ofImage screenTemp;
-
-			screenTemp.grabScreen( 0, 0, WIDTH_RES, HEIGHT_RES );
-			screenTemp.setImageType( OF_IMAGE_GRAYSCALE );
-
-			auto frame = Eigen::Map<Eigen::Matrix<unsigned char, WIDTH_RES, HEIGHT_RES > >( screenTemp.getPixels().getData() );
-
-			if ( !m_initial_frames_set )
-			{
-				for ( int i = 0; i < m_num_of_frames_to_buffer - 1; i++ )
-				{
-					m_dqn_module.attr( "buffer_frame" )(frame);
-				}
-				m_initial_frames_set = true;
-			}
-			m_dqn_module.attr( "buffer_frame" )(frame);
-
-			if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE )
-			{
-				py::object is_finished_training_value = m_dqn_module.attr( "add_replay_memory" )(m_action, m_reward, m_done);
-				bool is_finished_training = is_finished_training_value.cast<bool>();
-
-				if ( is_finished_training )
-				{
-					m_dqn_module.attr( "restoreMode" )();
-					m_game_mode = GAMEMODE::AI_RESTORE_MODE;
-					return;
-				}
-			}
-
-			m_reward = 0;
 
 			if ( m_done )
 			{
 				resetLevel();
 			}
 		}
-		m_current_frame++;
-
-		if ( m_current_frame == m_frames_to_skip )
-		{
-			m_current_frame = 0;
-		}
 	}
-	else if ( m_game_mode == GAMEMODE::PLAYER_MODE )
+	catch ( py::error_already_set& a )
 	{
-		float temp_reward;
-		updateBallPosition( dt, m_retflag, m_done, temp_reward );
+		std::string error;
 
-		if ( m_done )
+		error = a.what();
+
+
+		for ( int i = 0; i < error.size(); i++ )
 		{
-			resetLevel();
+			cout << error[i];
 		}
 	}
 }
@@ -180,7 +209,7 @@ void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& rewa
 	else if ( hasCollidedWithPlayer( m_ball_position, new_ball_position ) )
 	{
 		reward = 1.0f;
-		new_ball_position.x = m_player_position.x;
+		m_ball_position.x = m_player_position.x + m_ball_size + 1.0f;
 		m_ball_direction.x *= -1;
 		return;
 	}
@@ -209,8 +238,32 @@ void ofApp::draw() {
 
 	ofSetHexColor( 0xffffff );
 
-
 	ofFill();
+
+#if DRAW_DEBUG_IMAGES
+
+	ofImage screenTemp;
+	ofPixels pixels;
+
+	int x_value = 0;
+
+	for ( int i = 0; i < 4; i++ )
+	{
+		py::object current_frame = m_dqn_module.attr( "get_frame" )(i);
+		auto current_frame_data = current_frame.cast< Eigen::Matrix<unsigned char, 80, 80 > >();
+
+		pixels.setFromPixels( current_frame_data.data(), 80, 80, OF_IMAGE_GRAYSCALE );
+
+		screenTemp.setFromPixels( pixels );
+
+		screenTemp.draw( 160 + x_value, 0, 80, 80 );
+
+		x_value += 80;
+	}
+
+#endif // DRAW_DEBUG_IMAGES
+
+
 	ofDrawRectangle( m_player_position.x, m_player_position.y, m_ball_size, m_player_length );
 
 	ofDrawRectangle( m_ball_position.x, m_ball_position.y, m_ball_size, m_ball_size );
@@ -222,11 +275,24 @@ bool ofApp::hasCollidedWithPlayer( const ofVec2f& ball_current_position, const o
 	ofVec2f interSection;
 
 	ofVec2f player_position_start = m_player_position;
+
+	player_position_start.x += m_ball_size;
+
 	ofVec2f player_position_end = player_position_start;
 
 	player_position_end.y += m_player_length + m_ball_size;
-	player_position_start.y -= m_ball_size;
-	return ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, ball_current_position, ball_new_position, interSection );
+
+	ofRectangle new_ballRect = ofRectangle( ball_new_position.x, ball_new_position.y, m_ball_size, m_ball_size );
+	ofRectangle current_ballRect = ofRectangle( ball_current_position.x, ball_current_position.y, m_ball_size, m_ball_size );
+
+	bool collided = false;
+
+	collided |= ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, current_ballRect.getTopLeft(), new_ballRect.getTopLeft(), interSection );
+	collided |= ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, current_ballRect.getTopRight(), new_ballRect.getTopRight(), interSection );
+	collided |= ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, current_ballRect.getBottomLeft(), new_ballRect.getBottomLeft(), interSection );
+	collided |= ofLineSegmentIntersection<ofVec2f>( player_position_start, player_position_end, current_ballRect.getBottomRight(), new_ballRect.getBottomRight(), interSection );
+
+	return collided;
 }
 
 void ofApp::moveUp( float dx )
@@ -242,10 +308,9 @@ void ofApp::moveUp( float dx )
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed( int key ) {\
+void ofApp::keyPressed( int key ) {
 
-	float dt = (float)ofGetElapsedTimeMillis() / 1000.0f;
-	ofResetElapsedTimeCounter();
+	float dt = 1.0f;
 
 	if ( !m_key_pressed )
 	{
@@ -294,10 +359,19 @@ void ofApp::resetLevel()
 	m_player_position = ofVec2f( 10.0f, ofRandom( 10, HEIGHT_RES - 10 ) );
 	m_ball_position = m_ball_origin;
 	m_ball_direction = m_ball_original_direction;
-	m_ball_direction.rotate( ofRandom( 40 ) + 32 );
+
+	int sign = rand() % 2;
+
+	if ( sign == 0 )
+	{
+		m_ball_direction.rotate( 90 - ofRandom( 5, 45 ) );
+	}
+	else
+	{
+		m_ball_direction.rotate( 90 + ofRandom( 5, 45 ) );
+	}
 	m_done = false;
 	m_current_frame = 0;
-	m_initial_frames_set = false;
 	m_steps = 0;
 }
 

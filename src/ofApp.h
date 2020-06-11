@@ -6,13 +6,14 @@
 
 #define WIDTH_RES 160
 #define HEIGHT_RES 160
+#define DRAW_DEBUG_IMAGES 0
 
 
 namespace py = pybind11;
 
 class ofApp : public ofBaseApp
 {
-public:
+	public:
 
 	enum GAMEMODE
 	{
@@ -43,7 +44,7 @@ public:
 	void			dragEvent( ofDragInfo dragInfo );
 	void			gotMessage( ofMessage msg );
 
-private:
+	private:
 
 	int				m_player_length{ HEIGHT_RES / 9 };
 	ofVec2f			m_player_position{ 10.0f, 0.0f };
@@ -65,7 +66,7 @@ private:
 	bool			m_retflag;
 	bool			m_done;
 	float			m_reward{ 0.0f };
-	GAMEMODE		m_game_mode{ AI_RESTORE_MODE };
+	GAMEMODE		m_game_mode{ AI_TRAIN_MODE };
 	int				m_steps{ 0 };
 
 	py::module		m_dqn_module;

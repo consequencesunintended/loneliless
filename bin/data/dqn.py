@@ -1,12 +1,16 @@
+import os
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import tensorflow as tf
 import collections
 import numpy as np
 import cv2
 import copy 
-import os
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.FATAL)
+tf.compat.v1.compat.v1.logging.set_verbosity(tf.compat.v1.compat.v1.logging.FATAL)
+tf.compat.v1.disable_eager_execution()
 
 action_space_size = 3
 frames_to_store = 8
@@ -18,23 +22,23 @@ def getNumFramesToStore():
     return frames_to_store
 
 def createNetowrk(name):
-    with tf.variable_scope(name):
+    with tf.compat.v1.variable_scope(name):
 
-        input_images = tf.placeholder(tf.float32,shape=[None, 80,80,frames_to_store])
-        convo_1 = tf.layers.conv2d(inputs=input_images,filters=32,kernel_size=5,padding="same", activation=tf.nn.relu)
-        convo_1_pooling = tf.layers.max_pooling2d(inputs=convo_1, pool_size=[2, 2], strides=2)
-        convo_2 = tf.layers.conv2d(inputs=convo_1_pooling,filters=64,kernel_size=5,padding="same", activation=tf.nn.relu)
-        convo_2_pooling = tf.layers.max_pooling2d(inputs=convo_2, pool_size=[2, 2], strides=2)
-        convo_2_flat = tf.reshape(convo_2_pooling,[-1,20*20*64])
-        hidden_1 = tf.layers.dense(convo_2_flat, 512, activation=tf.nn.relu)
-        y_pred = tf.layers.dense(hidden_1, action_space_size)
-        act = tf.argmax(y_pred, 1)
-        enum_action = tf.placeholder(shape=[None, 2], dtype=tf.int32)
-        gathered_layer = tf.gather_nd(y_pred, indices=enum_action)
-        y_true = tf.placeholder(shape=None, dtype = tf.float32)
-        loss = tf.losses.mean_squared_error(labels=y_true,predictions=gathered_layer)
-        varsList = tf.trainable_variables(scope=name)
-        optimiser = tf.train.AdamOptimizer(1e-4)
+        input_images = tf.compat.v1.placeholder(tf.compat.v1.float32,shape=[None, 80,80,frames_to_store])
+        convo_1 = tf.compat.v1.layers.conv2d(inputs=input_images,filters=32,kernel_size=5,padding="same", activation=tf.compat.v1.nn.relu)
+        convo_1_pooling = tf.compat.v1.layers.max_pooling2d(inputs=convo_1, pool_size=[2, 2], strides=2)
+        convo_2 = tf.compat.v1.layers.conv2d(inputs=convo_1_pooling,filters=64,kernel_size=5,padding="same", activation=tf.compat.v1.nn.relu)
+        convo_2_pooling = tf.compat.v1.layers.max_pooling2d(inputs=convo_2, pool_size=[2, 2], strides=2)
+        convo_2_flat = tf.compat.v1.reshape(convo_2_pooling,[-1,20*20*64])
+        hidden_1 = tf.compat.v1.layers.dense(convo_2_flat, 512, activation=tf.compat.v1.nn.relu)
+        y_pred = tf.compat.v1.layers.dense(hidden_1, action_space_size)
+        act = tf.compat.v1.argmax(y_pred, 1)
+        enum_action = tf.compat.v1.placeholder(shape=[None, 2], dtype=tf.compat.v1.int32)
+        gathered_layer = tf.compat.v1.gather_nd(y_pred, indices=enum_action)
+        y_true = tf.compat.v1.placeholder(shape=None, dtype = tf.compat.v1.float32)
+        loss = tf.compat.v1.losses.mean_squared_error(labels=y_true,predictions=gathered_layer)
+        varsList = tf.compat.v1.trainable_variables(scope=name)
+        optimiser = tf.compat.v1.train.AdamOptimizer(1e-4)
         train = optimiser.minimize(loss, var_list=varsList)
 
         return input_images, act, y_pred, y_true, train, enum_action, loss
@@ -42,8 +46,8 @@ def createNetowrk(name):
 image_1, act, y_pred, y_true, train_step, enum_action, loss_source = createNetowrk(source_name)
 target_image_1, target_act, target_y_pred, target_y_true, target_train_step, target_enum_action, loss_target = createNetowrk(target_name)
 
-source_vars = tf.trainable_variables(scope='source')
-target_vars = tf.trainable_variables(scope='target')
+source_vars = tf.compat.v1.trainable_variables(scope='source')
+target_vars = tf.compat.v1.trainable_variables(scope='target')
 
 def get_ops(target_vars, source_vars):
 
@@ -60,7 +64,7 @@ def run_ops(ops):
         sess.run(op)
 
 Operations = get_ops(target_vars, source_vars)
-init = tf.compat.v1.global_variables_initializer()
+init = tf.compat.v1.compat.v1.global_variables_initializer()
 
 gamma = 0.99
 train_episodes = 4000
@@ -85,9 +89,9 @@ frames_buffer = collections.deque(maxlen=frames_to_store)
 sync_size = 1000
 batch_size = 32
 modelPath = ""
-saver = tf.train.Saver()
+saver = tf.compat.v1.train.Saver()
 Experience = collections.namedtuple("Experience", field_names=['state', 'action', 'reward', 'done', 'new_state'])
-sess = tf.compat.v1.Session()
+sess = tf.compat.v1.compat.v1.Session()
 resized_screen = np.zeros((80,80))
 sess.run(init)
 
@@ -136,7 +140,7 @@ def add_replay_memory(action, rew, done):
     
     if len(replay_memory) == replay_memory_max_size:
 
-        indicies = np.random.randint(0,replay_memory_max_size,size=batch_size)
+        indicies = np.random.choice(replay_memory_max_size,batch_size,replace=False)
         prev_state_list, action_list, rew_list, done_list, next_state_list = zip(*[ replay_memory[x] for x in indicies])
         target_q = sess.run(target_y_pred, feed_dict={target_image_1: np.asarray(next_state_list)})
         target_q_val = np.max( target_q, axis=1 )
