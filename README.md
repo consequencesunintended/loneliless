@@ -19,5 +19,5 @@
 <p><a href="https://openframeworks.cc/" target="_blank" rel="noopener">OpenFrameworks</a></p>
 <p><a href="https://github.com/pybind/pybind11" target="_blank" rel="noopener">Pybind11</a></p>
 <p><a href="https://www.python.org/downloads/release/python-364/" target="_blank" rel="noopener">Python 3.6.4</a></p>
-<p>Tensorflow 1.x</p>
+<p>Tensorflow 2.x</p>
 <p>Numpy</p>
