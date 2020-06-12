@@ -32,9 +32,8 @@ void ofApp::setup() {
 
 			// set the default location for saving and restoring the model variables
 			const std::string& model_directory_string = data_directory + "/model";
-			const std::string& model_variables_path = model_directory_string + "/loneliless.ckpt";
 
-			m_dqn_module.attr( "setSavedModelPath" )(model_variables_path);
+			m_dqn_module.attr( "setSavedModelPath" )(model_directory_string);
 
 			py::object			m_num_of_frames_to_buffer_value = m_dqn_module.attr( "getNumFramesToStore" )();
 
