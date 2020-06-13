@@ -11,13 +11,13 @@
 <p>-In Visual Studio now you need to fix the linking path for Pybind11.</p>
 <p>-Right click on the project and click properties</p>
 <p>-Select C/C++</p>
-<p>-Add Pybind11 path within the python folder into the &ldquo;Additional Include Directories&rdquo;</p>
+<p>-Install pybind11 by running this command in command line: pip install pybind11 </p>
 <p>-Navigate now to the Linker</p>
 <p>-And add the python folder to the &ldquo;Additional Library Directories&rdquo;</p>
 <p>-Click Ok and now you should be able to run the project.</p>
 <h2>Dependencies</h2>
 <p><a href="https://openframeworks.cc/" target="_blank" rel="noopener">OpenFrameworks</a></p>
 <p><a href="https://github.com/pybind/pybind11" target="_blank" rel="noopener">Pybind11</a></p>
-<p><a href="https://www.python.org/downloads/release/python-364/" target="_blank" rel="noopener">Python 3.6.4</a></p>
+<p><a href="https://www.python.org/downloads/release/python-364/" target="_blank" rel="noopener">Python 3.x</a></p>
 <p>Tensorflow 2.x</p>
 <p>Numpy</p>
