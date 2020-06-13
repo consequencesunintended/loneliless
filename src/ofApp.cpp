@@ -104,7 +104,7 @@ void ofApp::update() {
 				}
 				float temp_reward;
 
-				updateBallPosition( dt, m_retflag, m_done, temp_reward );
+				updateBallPosition( dt, m_done, temp_reward );
 				m_reward += temp_reward;
 			}
 
@@ -157,7 +157,7 @@ void ofApp::update() {
 		else if ( m_game_mode == GAMEMODE::PLAYER_MODE )
 		{
 			float temp_reward;
-			updateBallPosition( dt, m_retflag, m_done, temp_reward );
+			updateBallPosition( dt, m_done, temp_reward );
 
 			if ( m_done )
 			{
@@ -179,11 +179,10 @@ void ofApp::update() {
 	}
 }
 
-void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
+void ofApp::updateBallPosition( float dt, bool& done, float& reward )
 {
 	m_steps++;
 	constexpr int32_t max_num_steps = 1000;
-	retflag = true;
 	done = false;
 	reward = 0.0f;
 	ofVec2f new_ball_position = m_ball_position + m_ball_direction * dt * 2.0f;
@@ -210,9 +209,8 @@ void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& rewa
 	else if ( hasCollidedWithPlayer( m_ball_position, new_ball_position ) )
 	{
 		reward = 1.0f;
-		m_ball_position.x = m_player_position.x + m_ball_size + 1.0f;
+		new_ball_position.x = m_player_position.x + m_ball_size + 1.0f;
 		m_ball_direction.x *= -1;
-		return;
 	}
 
 	else if ( new_ball_position.x <= 0 )
@@ -228,7 +226,6 @@ void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& rewa
 	}
 
 	m_ball_position = new_ball_position;
-	retflag = false;
 }
 
 

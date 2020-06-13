@@ -24,7 +24,7 @@ class ofApp : public ofBaseApp
 
 	void			setup();
 	void			update();
-	void			updateBallPosition( float dt, bool& retflag, bool& done, float& reward );
+	void			updateBallPosition( float dt, bool& done, float& reward );
 	void			draw();
 	bool			hasCollidedWithPlayer( const ofVec2f& ball_current_position, const ofVec2f& ball_new_position );
 
@@ -63,7 +63,6 @@ class ofApp : public ofBaseApp
 	int				m_current_frame{ 0 };
 	int				m_action{ 0 };
 	int				m_frames_to_skip{ 5 };
-	bool			m_retflag;
 	bool			m_done;
 	float			m_reward{ 0.0f };
 	GAMEMODE		m_game_mode{ AI_RESTORE_MODE };
