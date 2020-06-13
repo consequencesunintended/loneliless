@@ -182,12 +182,14 @@ void ofApp::update() {
 void ofApp::updateBallPosition( float dt, bool& retflag, bool& done, float& reward )
 {
 	m_steps++;
+	constexpr int32_t max_num_steps = 1000;
 	retflag = true;
 	done = false;
 	reward = 0.0f;
 	ofVec2f new_ball_position = m_ball_position + m_ball_direction * dt * 2.0f;
 
-	if ( m_steps == 1000 )
+	// in the training mode make sure we don't get stop in a loop
+	if ( m_game_mode == GAMEMODE::AI_TRAIN_MODE && m_steps == max_num_steps )
 	{
 		done = true;
 		return;
