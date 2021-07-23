@@ -1,4 +1,6 @@
 <h2>LONELILESS</h2>
+<a href="https://www.buymeacoffee.com/banterless" target="_blank"><img src="https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png" alt="Buy Me A Coffee" style="height: 41px !important;width: 174px !important;box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;-webkit-box-shadow: 0px 3px 2px 0px rgba(190, 190, 190, 0.5) !important;" ></a>
+<p>&nbsp;</p>
 <p id="yui_3_17_2_1_1569711346218_14531" class="">A Deep-Q Network playing a single player Pong game. Network done in Python (Tensorflow-gpu) with the single player Pong game implemented in C++ (Openframeworks) and both binded with Pybind11.</p>
 <p class=""><img src="https://static1.squarespace.com/static/5d8c1173d980a856238b719f/t/5d8d36e5b01e692e31e2e6d0/1569535752308/Hnet-image+%281%29.gif?format=300w" alt="" width="160" height="160" /></p>
 <h2>Instructions</h2>
