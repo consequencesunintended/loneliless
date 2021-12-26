@@ -14,15 +14,17 @@ void ofApp::setup() {
 
 	Py_SetProgramName( (wchar_t*)"PYTHON" );
 
-
 	if ( m_game_mode != GAMEMODE::PLAYER_MODE )
 	{
 		// make sure the data directory is been added to python path, so 
 		// .py files can be loaded from the default data folder
-		const std::string& data_directory = ofToDataPath( "", true );
-		py::module			sys = py::module::import( "sys" );
+		const std::string&	data_directory = ofToDataPath( "", true );
+		auto				data_directory_c_str = data_directory.c_str();
+		const size_t		cSize = strlen(data_directory_c_str) + 1;
+		wchar_t*			wc = new wchar_t[cSize];
 
-		sys.attr( "path" ).attr( "insert" )(1, data_directory);
+		mbstowcs(wc, data_directory_c_str, cSize);
+		PySys_SetArgv(1, &wc);
 
 		try
 		{
